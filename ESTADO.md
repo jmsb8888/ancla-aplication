@@ -50,7 +50,8 @@ clientes corporativos: multiproyecto es el caso real.
 - [x] **Cuenta de Google AI Studio** → `GEMINI_API_KEY` en `.env.local`, modelo `gemini-3.6-flash`.
 - [x] **Proyecto en Supabase** → `ancla-r01` (`bbztgsidjqrhshqmpqqh`, us-east-2, Postgres 17). Credenciales ya en `.env.local`.
 - [x] **Escenarios en Make** → *Documentos a Drive* (6019990) y *Carpeta de proyecto* (6020186), ambos activos y probados. `AUTOMATION_WEBHOOK_URL`, `AUTOMATION_CARPETA_WEBHOOK_URL`, `AUTOMATION_SECRET` y `DRIVE_CARPETA_POR_DEFECTO` en `.env.local`.
-- [ ] **Cuenta de Vercel** (y decidir si va por GitHub) → para el despliegue.
+- [x] **Cuenta de Vercel** → proyecto `ancla-aplication`, despliegue automático desde `main` de `jmsb8888/ancla-aplication`.
+- [ ] **Pegar `GEMINI_API_KEY` y `AUTOMATION_SECRET` en Vercel** y redesplegar. Es lo único que falta para que producción funcione completa.
 
 Las credenciales van en `.env.local`, que **nunca** se sube al repositorio.
 
@@ -372,6 +373,49 @@ subió un archivo dentro de esa subcarpeta. Quedan en Drive `prueba-ancla.txt` y
 carpeta `Proyecto ACCESO` como restos de prueba; se pueden borrar.
 
 Variable nueva en `.env.local`: `AUTOMATION_CARPETA_WEBHOOK_URL`.
+
+---
+
+### 2026-08-22 — Repositorio en GitHub y despliegue en Vercel
+
+**GitHub.** El código vive en `jmsb8888/ancla-aplication` (privado), rama `main`.
+Quedaron fuera del control de versiones `.env.local`, `supabase/.temp/` (estado local
+de la CLI) y `tsconfig.tsbuildinfo`.
+
+**Identidad de los commits.** El repo tiene su propia configuración de autor:
+
+```
+git config user.email "80297741+jmsb8888@users.noreply.github.com"
+```
+
+No es un capricho. El plan Hobby de Vercel **rechaza** los despliegues cuyo commit
+venga de alguien que no sea el dueño de la cuenta, y la identidad global de esta
+máquina es `jsalamanca@automatiza.co`, que GitHub resuelve a otra cuenta. Con la
+global, el push se sube pero el despliegue queda en *Blocked*. La configuración es
+local a este repositorio: la global sigue intacta.
+
+**Vercel.** Proyecto `ancla-aplication` en «Jose's projects», preset Vite detectado
+solo, y despliegue automático desde `main`. Dominio de producción:
+**https://ancla-aplication.vercel.app**
+
+Para que Vercel viera el repositorio privado hubo que instalar su app de GitHub en la
+cuenta `jmsb8888`, limitada a ese único repositorio.
+
+**Un fallo que solo aparece en producción.** Todas las funciones de `/api` respondían
+500 con `ERR_MODULE_NOT_FOUND: Cannot find module '/var/task/api/_sesion'`. El paquete
+declara `"type": "module"`, así que en producción las ejecuta Node como ESM y Node
+**exige la extensión** en los imports relativos; en local Vite resuelve el especificador
+y por eso no se notaba. Los imports pasaron a `from "./_sesion.js"`, que TypeScript
+sigue resolviendo al `.ts`. Vale la pena recordarlo: lo que funciona en `npm run dev`
+no prueba que las funciones de servidor funcionen.
+
+**Variables de entorno cargadas en Vercel** (Production y Preview): `GEMINI_MODEL`,
+`GEMINI_MODEL_LIGERO`, `AUTOMATION_WEBHOOK_URL`, `AUTOMATION_CARPETA_WEBHOOK_URL`,
+`DRIVE_CARPETA_POR_DEFECTO`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
+
+Faltan **`GEMINI_API_KEY`** y **`AUTOMATION_SECRET`**, que las pega José en
+*Settings → Environment Variables* y luego redespliega. Sin ellas el generador corre en
+simulación y el archivado a Drive no sale. Los valores están en su `.env.local`.
 
 ---
 
