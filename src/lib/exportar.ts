@@ -9,7 +9,10 @@ import type { TDocumentDefinitions, Content } from "pdfmake/interfaces";
 // Los tipos publicados de pdfmake no describen `vfs` ni el callback de
 // getBase64; se acota el hueco aquí en vez de esparcir `any` por el archivo.
 interface PdfMakeRuntime {
+  /** Forma de registrar fuentes en 0.2. En 0.3 se ignora. */
   vfs: Record<string, string>;
+  /** Forma de registrarlas en 0.3. No existe en 0.2. */
+  addVirtualFileSystem?: (vfs: Record<string, string>) => void;
   fonts: Record<string, Record<string, string>>;
   createPdf: (def: TDocumentDefinitions) => {
     // En pdfmake 0.3 estos métodos devuelven promesas; en 0.2 usaban callback.
@@ -36,7 +39,17 @@ function cargarPdfMake(): Promise<PdfMakeRuntime> {
       // pdfmake 0.2 exporta { vfs }; 0.3 exporta el objeto de fuentes directo.
       const f = (fuentesModulo as { default?: unknown }).default ?? fuentesModulo;
       const fuentes = f as Record<string, string> & { vfs?: Record<string, string> };
-      pdf.vfs = fuentes.vfs ?? fuentes;
+      const tabla = fuentes.vfs ?? fuentes;
+
+      // En 0.3 hay que registrarlas con `addVirtualFileSystem`: asignar `.vfs`
+      // es la forma de 0.2 y en 0.3 no hace nada, así que la exportación moría
+      // con «File 'Roboto-Regular.ttf' not found in virtual file system».
+      if (typeof pdf.addVirtualFileSystem === "function") {
+        pdf.addVirtualFileSystem(tabla);
+      } else {
+        pdf.vfs = tabla;
+      }
+
       pdf.fonts = {
         Roboto: {
           normal: "Roboto-Regular.ttf",
