@@ -525,6 +525,31 @@ que construye el PDF antes de mandarlo.
 
 ---
 
+### 2026-08-22 — Abrir el PDF: tres fallos de maquetación
+
+El PDF llegó a Drive, pesaba 45 KB y Drive lo reconocía. Nada de eso dice que esté
+bien maquetado, y no lo estaba. José lo abrió y avisó.
+
+| Qué pasaba | Por qué |
+| --- | --- |
+| Todo el texto plano, sin negritas | `limpiar()` borraba los `**` en vez de aplicarlos. El exportador de Word sí lo hacía bien; era solo el de PDF. |
+| «Descripción» partida cada cuatro palabras | `widths: cab.map(() => "*")`: todas las columnas iguales, así que la de las frases largas medía lo mismo que «Prioridad». |
+| `---` impresos como texto | Ningún renderizador —pantalla, Word ni PDF— contemplaba la regla horizontal, así que caía en la rama de párrafo. |
+
+Los anchos ahora son proporcionales al contenido con amortiguación por raíz
+cuadrada: sin ella una descripción larga se comería la tabla entera. La tabla de
+requerimientos queda `2* · 9* · 2* · 3*`.
+
+Verificado sobre el documento real antes de subir: 11 reglas y ningún `---`
+suelto en los tres formatos, 65 trozos en negrita en el PDF, 49 `<b>` en Word.
+
+**La lección, otra vez la misma:** que un artefacto exista y pese lo razonable no
+dice nada de su contenido. Los tres fallos anteriores de esta jornada —la pestaña
+colgada, la cita perdida, la fuente de pdfmake— también pasaron una comprobación
+indirecta antes de que alguien mirara el resultado de verdad.
+
+---
+
 ## Cómo retomar si se pierde la sesión
 
 1. Lee este archivo y `PROMPT.md` (el encargo completo).

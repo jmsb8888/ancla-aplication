@@ -205,6 +205,13 @@ function mdAPdf(md: string): Content[] {
   /** Línea horizontal de separación, para los `---` del Markdown. */
   const REGLA = /^\s*(-{3,}|\*{3,}|_{3,})\s*$/;
 
+  /**
+   * Ancho de la caja de texto en puntos: LETTER (612) menos los márgenes
+   * laterales de `definicion` (56 y 56), con un margen de holgura para los
+   * filetes de la tabla.
+   */
+  const ANCHO_UTIL = 496;
+
   while (i < lineas.length) {
     const l = lineas[i];
     if (!l.trim()) {
@@ -215,7 +222,7 @@ function mdAPdf(md: string): Content[] {
     // documento se llena de «---» impresos como texto.
     if (REGLA.test(l)) {
       contenido.push({
-        canvas: [{ type: "line", x1: 0, y1: 0, x2: 499, y2: 0, lineWidth: 0.5, lineColor: "#d4d4d8" }],
+        canvas: [{ type: "line", x1: 0, y1: 0, x2: 496, y2: 0, lineWidth: 0.5, lineColor: "#d4d4d8" }],
         margin: [0, 6, 0, 10],
       });
       i++;
@@ -248,11 +255,18 @@ function mdAPdf(md: string): Content[] {
       // mientras «Prioridad», de una sola palabra, ocupaba lo mismo. La raíz
       // cuadrada amortigua: sin ella, una descripción larga se comería la
       // tabla entera.
-      const anchos = cab.map((_, j) =>
+      //
+      // Los anchos van en puntos, no en «2*»: pdfmake solo entiende 'auto',
+      // '*' o un número, y con la forma estrellada falla con «unsupported
+      // number».
+      const pesos = cab.map((_, j) =>
         Math.sqrt(Math.max(cab[j].length, ...cuerpo.map((f) => (f[j] ?? "").length), 1)),
       );
-      const suma = anchos.reduce((a, b) => a + b, 0);
-      const proporciones = anchos.map((n) => `${Math.max(1, Math.round((n / suma) * 16))}*`);
+      const suma = pesos.reduce((a, b) => a + b, 0);
+      const proporciones = pesos.map((p) => Math.round((p / suma) * ANCHO_UTIL));
+      // El redondeo se absorbe en la última columna para no pasarse del ancho.
+      proporciones[proporciones.length - 1] +=
+        ANCHO_UTIL - proporciones.reduce((a, b) => a + b, 0);
 
       contenido.push({
         table: {
