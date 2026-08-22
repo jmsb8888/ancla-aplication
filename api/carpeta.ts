@@ -10,7 +10,10 @@
  * mirando si el proyecto ya tiene carpeta guardada. Esa es la garantía de que
  * no se creen carpetas repetidas con el mismo nombre.
  */
-import { verificarSesion, type Peticion, type Respuesta } from "./_sesion";
+// La extensión .js es obligatoria: el paquete es "type": "module" y Node,
+// que es quien ejecuta estas funciones en producción, exige la extensión en
+// los imports relativos. TypeScript la resuelve igual al archivo .ts.
+import { verificarSesion, type Peticion, type Respuesta } from "./_sesion.js";
 
 interface Cuerpo {
   /** Nombre de la carpeta a crear. Normalmente el del proyecto. */

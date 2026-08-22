@@ -2,7 +2,10 @@
  * Llama al modelo. La API key vive solo aquí, en el servidor: nunca llega al
  * navegador. Si algún día hiciera falta en el cliente, el diseño está mal.
  */
-import { verificarSesion, type Peticion, type Respuesta } from "./_sesion";
+// La extensión .js es obligatoria: el paquete es "type": "module" y Node,
+// que es quien ejecuta estas funciones en producción, exige la extensión en
+// los imports relativos. TypeScript la resuelve igual al archivo .ts.
+import { verificarSesion, type Peticion, type Respuesta } from "./_sesion.js";
 
 const URL_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 

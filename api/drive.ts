@@ -10,7 +10,10 @@
  * automatización recibe un archivo de verdad, sin tener que reconvertirlo del
  * otro lado, y viaja un tercio menos de datos.
  */
-import { verificarSesion, type Peticion, type Respuesta } from "./_sesion";
+// La extensión .js es obligatoria: el paquete es "type": "module" y Node,
+// que es quien ejecuta estas funciones en producción, exige la extensión en
+// los imports relativos. TypeScript la resuelve igual al archivo .ts.
+import { verificarSesion, type Peticion, type Respuesta } from "./_sesion.js";
 
 interface Cuerpo {
   nombre: string;
