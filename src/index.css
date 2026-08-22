@@ -1,0 +1,175 @@
+@import "tailwindcss";
+
+/* Modo oscuro por clase en <html>, no por preferencia del sistema:
+   el usuario manda y su elección se recuerda. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------------
+   Tokens semánticos. Los valores viven en :root / .dark y aquí solo se
+   exponen a Tailwind, para que `bg-surface` o `text-muted` funcionen igual
+   en ambos modos.
+   --------------------------------------------------------------------------- */
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* Solo para el logotipo y los títulos de primer nivel: con moderación. */
+  --font-display: "Instrument Sans", "Inter", system-ui, sans-serif;
+
+  --color-canvas: var(--c-canvas);
+  --color-surface: var(--c-surface);
+  --color-raised: var(--c-raised);
+  --color-line: var(--c-line);
+  --color-line-strong: var(--c-line-strong);
+
+  --color-ink: var(--c-ink);
+  --color-muted: var(--c-muted);
+  --color-faint: var(--c-faint);
+
+  --color-accent: var(--c-accent);
+  --color-accent-hover: var(--c-accent-hover);
+  --color-accent-soft: var(--c-accent-soft);
+  --color-accent-ink: var(--c-accent-ink);
+
+  --color-ok: var(--c-ok);
+  --color-warn: var(--c-warn);
+  --color-danger: var(--c-danger);
+}
+
+/* Verde petróleo: sobrio, poco visto, legible en ambos modos. */
+:root {
+  --c-canvas: #f4f6f6;
+  --c-surface: #ffffff;
+  --c-raised: #fbfcfc;
+  --c-line: #e2e7e7;
+  --c-line-strong: #c8d1d1;
+
+  --c-ink: #12191a;
+  --c-muted: #5a6768;
+  --c-faint: #8b9899;
+
+  --c-accent: #0e6f78;
+  --c-accent-hover: #0b5a62;
+  --c-accent-soft: #e3f1f2;
+  --c-accent-ink: #ffffff;
+
+  --c-ok: #0f7b4f;
+  --c-warn: #a25c00;
+  --c-danger: #b42318;
+
+  color-scheme: light;
+}
+
+.dark {
+  /* Gris neutro, sin tinte: el color lo pone el acento, no el fondo. */
+  --c-canvas: #0a0a0b;
+  --c-surface: #141416;
+  --c-raised: #1c1c1f;
+  --c-line: #292a2e;
+  --c-line-strong: #3c3d43;
+
+  --c-ink: #ececee;
+  --c-muted: #9b9ca1;
+  --c-faint: #6c6d73;
+
+  --c-accent: #2fa5b0;
+  --c-accent-hover: #45b8c2;
+  --c-accent-soft: #10292c;
+  --c-accent-ink: #06181a;
+
+  --c-ok: #34c58a;
+  --c-warn: #d99a3c;
+  --c-danger: #f2776b;
+
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--c-canvas);
+  color: var(--c-ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Foco visible siempre, en el color de acento. */
+:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Respeta a quien pide menos movimiento. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Barra de desplazamiento discreta, acorde al modo. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-line-strong) transparent;
+}
+
+
+/* Panel de la izquierda del acceso: oscuro en los dos modos, a propósito.
+   Separa el mundo del documento del mundo del formulario. */
+.panel-obra {
+  --c-surface: #141416;
+  --c-raised: #1c1c1f;
+  --c-line: #292a2e;
+  --c-ink: #ececee;
+  --c-muted: #9b9ca1;
+  --c-faint: #6c6d73;
+  --c-accent: #2fa5b0;
+  --c-accent-soft: #10292c;
+  /* Un punto por debajo del lienzo claro y por encima del oscuro: en los dos
+     modos se lee como una superficie distinta, no como el mismo fondo. */
+  background: #101012;
+  color: var(--c-ink);
+}
+
+/* La línea que une lo dicho con lo escrito se dibuja al entrar. */
+@keyframes trazar {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+.trazo {
+  transform-origin: top;
+  animation: trazar 420ms ease-out 220ms both;
+}
+@keyframes asomar {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.asoma { animation: asomar 380ms ease-out both; }
+
+
+/* Rótulos de sección. Antes iban en monoespaciada y mayúsculas, que es lo que
+   hace que una interfaz parezca un boceto. Ahora usan la tipografía de la
+   interfaz, en minúscula y con peso medio. */
+.rotulo {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--c-muted);
+}
+.rotulo-menor {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--c-faint);
+}

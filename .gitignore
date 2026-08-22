@@ -1,0 +1,12 @@
+node_modules
+dist
+.vercel
+.env
+.env.local
+.env.*.local
+*.local
+.DS_Store
+
+# Estado local de la CLI de Supabase y caché de compilación
+supabase/.temp
+*.tsbuildinfo
