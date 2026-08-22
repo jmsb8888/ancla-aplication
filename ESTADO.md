@@ -51,7 +51,8 @@ clientes corporativos: multiproyecto es el caso real.
 - [x] **Proyecto en Supabase** → `ancla-r01` (`bbztgsidjqrhshqmpqqh`, us-east-2, Postgres 17). Credenciales ya en `.env.local`.
 - [x] **Escenarios en Make** → *Documentos a Drive* (6019990) y *Carpeta de proyecto* (6020186), ambos activos y probados. `AUTOMATION_WEBHOOK_URL`, `AUTOMATION_CARPETA_WEBHOOK_URL`, `AUTOMATION_SECRET` y `DRIVE_CARPETA_POR_DEFECTO` en `.env.local`.
 - [x] **Cuenta de Vercel** → proyecto `ancla-aplication`, despliegue automático desde `main` de `jmsb8888/ancla-aplication`.
-- [ ] **Pegar `GEMINI_API_KEY` y `AUTOMATION_SECRET` en Vercel** y redesplegar. Es lo único que falta para que producción funcione completa.
+- [x] **`GEMINI_API_KEY` en Vercel** — la pegó José el 22/08/2026. Las variables se leen en el momento del despliegue, así que un cambio de valor **no surte efecto hasta redesplegar**.
+- [ ] **`AUTOMATION_SECRET` en Vercel** sigue vacío. Hoy no rompe nada porque los escenarios de Make no validan la cabecera; queda pendiente cerrar las dos puntas a la vez.
 
 Las credenciales van en `.env.local`, que **nunca** se sube al repositorio.
 
