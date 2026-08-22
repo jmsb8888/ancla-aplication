@@ -7,6 +7,71 @@
 
 ---
 
+## ⏸ Dónde quedamos — 22/08/2026, fin de jornada
+
+**Último commit en `main`: `d530d2e`**, subido y desplegado. Árbol limpio.
+
+### Lo único pendiente de comprobar
+
+`d530d2e` corrige los anchos de columna del PDF. pdfmake solo acepta `'auto'`,
+`'*'` o **números**; se le estaban pasando `'2*'` y rechazaba el documento entero
+con `unsupported number`, así que no llegaba nada a Drive.
+
+**Ese arreglo está desplegado pero NO verificado.** Para cerrarlo:
+
+1. Abrir <https://ancla-aplication.vercel.app/reuniones> → la reunión
+   *Levantamiento Proyecto ACCESO — 14 de julio*.
+2. Pulsar **Enviar a Drive**. Ojo: si la pestaña llevaba rato abierta, recargar
+   antes con Ctrl+F5 — con el JavaScript viejo en memoria el envío falla en
+   silencio.
+3. Debe aparecer «Subido: …». Si hay error, sale justo debajo del botón.
+4. Abrir el PDF en `Mi unidad › Ancla R-01 › Proyecto ACCESO` y mirar que:
+   - los rótulos (`Proyecto:`, `RF-01`, `Estado:`) salgan **en negrita**;
+   - la columna «Descripción» sea ancha y «Prioridad» estrecha;
+   - no haya `---` sueltos impresos como texto.
+
+Si algo falla, el código está en `src/lib/exportar.ts`, función `mdAPdf`.
+
+### Lo que ya funciona y está verificado en producción
+
+Recorrido completo con sesión real: proyecto → carpeta creada sola en Drive →
+transcripción → anonimizado (71 apariciones sustituidas, 0 fugas) → prompt v3
+4/4 capas → modelo real → documento → guardado en Supabase (reunión + documento +
+6 requerimientos) → trazabilidad 100 % con cita textual → PDF → Make → carpeta
+del proyecto.
+
+### Cola de trabajo, por orden
+
+1. **Verificar el PDF** (arriba). Es lo único que bloquea dar por buena la
+   exportación.
+2. **`AUTOMATION_SECRET` vacío en Vercel**, y los escenarios de Make no validan
+   la cabecera `X-Webhook-Secret`. Hoy la única protección es que la URL del
+   webhook no se conozca. Hay que cerrar las dos puntas a la vez: poner el valor
+   en Vercel **y** añadir el filtro en los dos escenarios.
+3. **Auditoría pendiente:** límite de peticiones por usuario en `/api`,
+   `search_path` en `tocar_updated_at`, revocar `EXECUTE` en `crear_perfil`,
+   escribir filas en `exportaciones`, y decidir qué hacer con la pantalla
+   *Plantillas*, que quedó sin uso.
+4. **Restos de prueba en Drive:** dentro de `Ancla R-01` sobran
+   `prueba-ancla.txt`, `Proyecto de prueba API` y una carpeta `Proyecto ACCESO`
+   duplicada (la de las 10:50; la buena es la de las 11:26).
+
+### Cómo levantar el entorno
+
+```bash
+cd "C:\Users\Usuario\Downloads\ESPECIALIZACION\DIPLOMADO\dos\app-r01" && npm run dev
+```
+
+Credenciales en `.env.local`, que no se sube. En Vercel están las nueve
+variables, todas con valor salvo `AUTOMATION_SECRET`.
+
+**Advertencia que vale la pena releer:** hoy fallaron seis cosas que habían
+pasado una comprobación indirecta. Que un artefacto exista, que pese lo razonable
+o que una función devuelva `200` no dice nada de si el resultado sirve. Hay que
+abrir el documento y mirarlo.
+
+---
+
 ## Resumen
 
 | Etapa | Qué es | Estado |
