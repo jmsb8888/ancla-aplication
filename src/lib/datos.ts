@@ -6,6 +6,7 @@
 import { supabase } from "./supabase";
 import type { Config } from "./prompt";
 import type { Sustitucion } from "./anonimizar";
+import { verificarDocumento } from "./trazabilidad";
 
 export interface ReunionResumen {
   id: string;
@@ -197,37 +198,37 @@ export async function guardarDocumento(datos: {
   return data.id;
 }
 
-/** Extrae los requerimientos del documento para trazabilidad y métricas. */
-export async function guardarRequerimientos(documentoId: string, contenidoMd: string) {
+/**
+ * Guarda los requerimientos del documento **junto con la frase que los respalda**.
+ *
+ * La cita es la razón de ser de la trazabilidad. Sin ella queda el
+ * requerimiento y la afirmación de que alguien lo dijo, que es justo lo que no
+ * hay que pedirle a nadie que crea. Antes se calculaba para pintarla en
+ * pantalla y se descartaba al guardar: al reabrir la reunión, el respaldo había
+ * desaparecido y las columnas `cita_origen` y `cita_offset` quedaban vacías.
+ *
+ * La extracción la hace `verificarDocumento`, que ya sabía hacerla. Tener dos
+ * parsers para lo mismo era pedir que se separaran con el tiempo.
+ */
+export async function guardarRequerimientos(
+  documentoId: string,
+  contenidoMd: string,
+  transcripcion: string,
+) {
   const user_id = await idUsuario();
-  const filas: {
-    documento_id: string;
-    user_id: string;
-    codigo: string;
-    tipo: "RF" | "RNF";
-    texto: string;
-    orden: number;
-  }[] = [];
 
-  const lineas = contenidoMd.split("\n");
-  let orden = 0;
-  for (const l of lineas) {
-    const m = l.match(/\b(RNF|RF)-(\d+)\b/);
-    if (!m) continue;
-    const texto = l
-      .replace(/^[|\s-]*/, "")
-      .replace(/\|/g, " · ")
-      .trim();
-    if (texto.length < 10) continue;
-    filas.push({
-      documento_id: documentoId,
-      user_id,
-      codigo: `${m[1]}-${m[2]}`,
-      tipo: m[1] as "RF" | "RNF",
-      texto: texto.slice(0, 1000),
-      orden: orden++,
-    });
-  }
+  const filas = verificarDocumento(contenidoMd, transcripcion).map((r, i) => ({
+    documento_id: documentoId,
+    user_id,
+    codigo: r.codigo,
+    tipo: r.tipo,
+    texto: r.texto.slice(0, 1000),
+    // Solo se guarda la cita cuando de verdad respalda: una por debajo del
+    // umbral confundiría más de lo que ayuda.
+    cita_origen: r.respaldo.respaldado ? (r.respaldo.cita?.slice(0, 1000) ?? null) : null,
+    cita_offset: r.respaldo.respaldado ? r.respaldo.offset : null,
+    orden: i,
+  }));
 
   if (!filas.length) return 0;
   const { error } = await supabase.from("requerimientos").insert(filas);

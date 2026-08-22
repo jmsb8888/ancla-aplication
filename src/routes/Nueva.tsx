@@ -221,7 +221,7 @@ export default function Nueva() {
         },
         estado: conError ? "parcial" : "completo",
       });
-      const n = await guardarRequerimientos(docId, resultado.documento);
+      const n = await guardarRequerimientos(docId, resultado.documento, textoFinal);
       setGuardado(`Guardado · ${n} requerimientos extraídos`);
     } catch (e) {
       setGuardado(e instanceof Error ? `No se pudo guardar: ${e.message}` : "No se pudo guardar");
