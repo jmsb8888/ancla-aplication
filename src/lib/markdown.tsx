@@ -147,8 +147,17 @@ export function renderMarkdown(md: string): ReactNode[] {
       continue;
     }
 
-    // Párrafo
-    const parrafo: string[] = [];
+    // Párrafo.
+    //
+    // La primera línea se consume siempre, y esto no es un detalle: las ramas
+    // de arriba exigen un espacio tras el marcador («- item», «1. item»), pero
+    // la condición de este bucle lo excluye sin exigirlo. Una línea como
+    // «**Proyecto:** ACCESO» —así escribe el modelo los metadatos— no encaja
+    // en ninguna rama anterior y tampoco entra aquí: `i` no avanzaba, el bucle
+    // exterior giraba para siempre y la pestaña se congelaba sin un solo error
+    // en consola. Arrancar el párrafo con la línea actual garantiza el avance.
+    const parrafo: string[] = [lineas[i]];
+    i++;
     while (i < lineas.length && lineas[i].trim() && !/^\s*([-*•]|\d+[.)]|#)/.test(lineas[i])) {
       parrafo.push(lineas[i]);
       i++;
