@@ -54,6 +54,14 @@ export function renderMarkdown(md: string): ReactNode[] {
       continue;
     }
 
+    // Regla horizontal. Va antes que el párrafo: si no, los `---` con los que
+    // el modelo separa las secciones se imprimen como texto.
+    if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(l)) {
+      salida.push(<hr key={i} className="my-5 border-0 border-t border-line" />);
+      i++;
+      continue;
+    }
+
     // Títulos
     const t = l.match(/^(#{1,6})\s+(.*)$/);
     if (t) {

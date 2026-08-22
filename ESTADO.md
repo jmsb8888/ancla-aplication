@@ -478,6 +478,53 @@ Make → Drive → base de datos.
 
 ---
 
+### 2026-08-22 — Prueba en el navegador: tres fallos que solo se ven ahí
+
+La prueba anterior corrió el motor desde Node y dio por bueno el resultado.
+Ejercitar la aplicación **en Chrome, contra producción y con sesión real**, sacó
+tres cosas que aquella no podía ver porque nunca renderizó nada.
+
+**1. La pestaña se congelaba al recibir el documento.** El servidor respondía
+`200` —consta en los logs de Vercel— pero el navegador se quedaba bloqueado: sin
+error en consola, sin JavaScript ejecutable, sin guardar nada. La causa estaba en
+`renderMarkdown`: las ramas de encabezado y listas exigen un espacio tras el
+marcador («`- item`», «`1. item`»), pero la condición del bucle de párrafo los
+excluye **sin** exigirlo. Una línea como `**Proyecto:** ACCESO` no la reclamaba
+ninguna rama y tampoco entraba en la del párrafo, así que `i` no avanzaba y el
+bucle exterior giraba para siempre. Todos los documentos generados abren con esa
+forma, o sea que fallaban todos. El párrafo ahora consume siempre su primera
+línea. Verificado con siete casos límite y el documento real: 41 nodos en 7 ms.
+
+Se auditaron los demás bucles del proyecto: los dos exportadores de
+`exportar.ts` sí avanzan siempre. El hueco era único de `markdown.tsx`.
+
+**2. La cita del requerimiento no se guardaba.** `guardarRequerimientos` volvía a
+parsear el markdown por su cuenta y nunca escribía `cita_origen` ni
+`cita_offset`, aunque las columnas existen desde la primera migración y la
+trazabilidad ya estaba calculada para pintarla en pantalla. Al reabrir la
+reunión, el respaldo había desaparecido. Ahora la extracción pasa por
+`verificarDocumento` —había dos parsers para lo mismo— y la cita se persiste,
+solo cuando supera el umbral.
+
+**3. El PDF no se generaba.** `File 'Roboto-Regular.ttf' not found in virtual
+file system`. El código registraba las fuentes con `pdfMake.vfs = …`, que es la
+API de pdfmake 0.2; la 0.3 —la instalada, 0.3.11— la ignora en silencio y espera
+`addVirtualFileSystem`. Bloqueaba el botón de PDF y también el envío a Drive,
+que construye el PDF antes de mandarlo.
+
+**Recorrido completo verificado en producción**, con sesión iniciada:
+
+| Paso | Resultado |
+| --- | --- |
+| Proyecto → carpeta en Drive | creada sola, id en `proyectos.carpeta_drive` |
+| Transcripción → anonimizado | 4 entidades, 71 apariciones, 0 fugas |
+| Prompt v3 | 4/4 capas, 9.950 caracteres |
+| Generación | 1 llamada, 40 s, `finishReason: STOP` |
+| Guardado | reunión + documento (8.372 car.) + 6 requerimientos |
+| Trazabilidad | 100 %, 6 de 6 con cita textual |
+
+---
+
 ## Cómo retomar si se pierde la sesión
 
 1. Lee este archivo y `PROMPT.md` (el encargo completo).

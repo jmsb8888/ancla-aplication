@@ -115,6 +115,12 @@ function mdAHtml(md: string): string {
       i++;
       continue;
     }
+    // Los `---` del Markdown son una separación, no texto que imprimir.
+    if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(l)) {
+      salida.push("<hr />");
+      i++;
+      continue;
+    }
     const t = l.match(/^(#{1,6})\s+(.*)$/);
     if (t) {
       const n = Math.min(t[1].length + 1, 6);
@@ -179,7 +185,25 @@ function mdAPdf(md: string): Content[] {
   const lineas = md.split("\n");
   let i = 0;
 
-  const limpiar = (s: string) => s.replace(/\*\*/g, "").replace(/`/g, "");
+  /**
+   * Devuelve el valor del campo `text` de pdfmake: una cadena si no hay
+   * negritas, o los trozos con su formato si las hay.
+   *
+   * Antes se borraban los `**` y se perdía la negrita: en un documento donde
+   * casi todos los rótulos van en negrita («**Proyecto:**», «**RF-01**»), el
+   * PDF salía plano y costaba distinguir el rótulo del contenido.
+   */
+  const rico = (s: string): string | (string | { text: string; bold: true })[] => {
+    const limpio = s.replace(/`/g, "");
+    if (!limpio.includes("**")) return limpio;
+    return limpio
+      .split(/\*\*([^*]+)\*\*/g)
+      .map((trozo, k) => (k % 2 ? { text: trozo, bold: true as const } : trozo))
+      .filter((t) => (typeof t === "string" ? t.length > 0 : true));
+  };
+
+  /** Línea horizontal de separación, para los `---` del Markdown. */
+  const REGLA = /^\s*(-{3,}|\*{3,}|_{3,})\s*$/;
 
   while (i < lineas.length) {
     const l = lineas[i];
@@ -187,10 +211,21 @@ function mdAPdf(md: string): Content[] {
       i++;
       continue;
     }
+    // La regla horizontal va antes que nada: si no, cae en el párrafo y el
+    // documento se llena de «---» impresos como texto.
+    if (REGLA.test(l)) {
+      contenido.push({
+        canvas: [{ type: "line", x1: 0, y1: 0, x2: 499, y2: 0, lineWidth: 0.5, lineColor: "#d4d4d8" }],
+        margin: [0, 6, 0, 10],
+      });
+      i++;
+      continue;
+    }
+
     const t = l.match(/^(#{1,6})\s+(.*)$/);
     if (t) {
       contenido.push({
-        text: limpiar(t[2]),
+        text: rico(t[2]),
         style: t[1].length <= 2 ? "titulo" : "subtitulo",
       });
       i++;
@@ -198,7 +233,7 @@ function mdAPdf(md: string): Content[] {
     }
     if (l.includes("|") && /^[\s|:-]+$/.test(lineas[i + 1] ?? "")) {
       const fila = (x: string) =>
-        x.replace(/^\s*\|/, "").replace(/\|\s*$/, "").split("|").map((c) => limpiar(c.trim()));
+        x.replace(/^\s*\|/, "").replace(/\|\s*$/, "").split("|").map((c) => c.trim());
       const cab = fila(l);
       i += 2;
       const cuerpo: string[][] = [];
@@ -208,11 +243,25 @@ function mdAPdf(md: string): Content[] {
         cuerpo.push(f.slice(0, cab.length));
         i++;
       }
+      // Las columnas se reparten según cuánto texto llevan. Con todas a "*" la
+      // de descripción quedaba espachurrada en cuatro palabras por línea
+      // mientras «Prioridad», de una sola palabra, ocupaba lo mismo. La raíz
+      // cuadrada amortigua: sin ella, una descripción larga se comería la
+      // tabla entera.
+      const anchos = cab.map((_, j) =>
+        Math.sqrt(Math.max(cab[j].length, ...cuerpo.map((f) => (f[j] ?? "").length), 1)),
+      );
+      const suma = anchos.reduce((a, b) => a + b, 0);
+      const proporciones = anchos.map((n) => `${Math.max(1, Math.round((n / suma) * 16))}*`);
+
       contenido.push({
         table: {
           headerRows: 1,
-          widths: cab.map(() => "*"),
-          body: [cab.map((c) => ({ text: c, bold: true, fontSize: 8 })), ...cuerpo.map((f) => f.map((c) => ({ text: c, fontSize: 8 })))],
+          widths: proporciones,
+          body: [
+            cab.map((c) => ({ text: rico(c), bold: true, fontSize: 8 })),
+            ...cuerpo.map((f) => f.map((c) => ({ text: rico(c), fontSize: 8 }))),
+          ],
         },
         layout: "lightHorizontalLines",
         margin: [0, 4, 0, 8],
@@ -220,15 +269,15 @@ function mdAPdf(md: string): Content[] {
       continue;
     }
     if (/^\s*[-*]\s+/.test(l)) {
-      const items: string[] = [];
+      const items: Content[] = [];
       while (i < lineas.length && /^\s*[-*]\s+/.test(lineas[i])) {
-        items.push(limpiar(lineas[i].replace(/^\s*[-*]\s+/, "")));
+        items.push({ text: rico(lineas[i].replace(/^\s*[-*]\s+/, "")) });
         i++;
       }
       contenido.push({ ul: items, margin: [0, 2, 0, 6] });
       continue;
     }
-    contenido.push({ text: limpiar(l), margin: [0, 0, 0, 4] });
+    contenido.push({ text: rico(l), margin: [0, 0, 0, 4] });
     i++;
   }
   return contenido;
