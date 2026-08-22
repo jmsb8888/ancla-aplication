@@ -13,6 +13,7 @@
 export type TipoEntidad =
   | "persona"
   | "empresa"
+  | "cargo"
   | "correo"
   | "telefono"
   | "documento"
@@ -36,6 +37,7 @@ export interface Sustitucion {
 export const ETIQUETAS: Record<TipoEntidad, string> = {
   persona: "PERSONA",
   empresa: "CLIENTE",
+  cargo: "CARGO",
   correo: "CORREO",
   telefono: "TELEFONO",
   documento: "DOCUMENTO",
@@ -46,6 +48,7 @@ export const ETIQUETAS: Record<TipoEntidad, string> = {
 export const NOMBRES_TIPO: Record<TipoEntidad, string> = {
   persona: "Nombre de persona",
   empresa: "Nombre de empresa",
+  cargo: "Cargo o rol",
   correo: "Correo electrónico",
   telefono: "Teléfono",
   documento: "Cédula o NIT",
@@ -61,6 +64,9 @@ const NO_SON_NOMBRES = new Set([
   "señor", "señora", "doctor", "doctora", "bueno", "entonces", "listo", "vale",
   "ok", "sí", "si", "gracias", "hola", "buenas", "perfecto", "claro", "además",
   "ahora", "después", "también", "por", "para", "con", "sin", "desde", "hasta",
+  // Etiquetas de hablante que son un papel en la reunión, no una persona.
+  "proveedor", "moderador", "equipo", "participantes", "entrevistador",
+  "consultor", "consultora", "asistente", "todos", "varios", "nota", "notas",
 ]);
 
 interface Regla {
@@ -113,10 +119,18 @@ const REGLAS: Regla[] = [
 
 /**
  * Etiqueta de hablante al inicio de línea. Es la señal más fiable en una
- * transcripción: "Marcela:", "[00:12:04] Juan Pérez:".
+ * transcripción: "Marcela:", "[00:12:04] Juan Pérez:", "MARCELA:".
+ *
+ * Acepta el nombre capitalizado y en mayúsculas sostenidas, que es como lo
+ * escriben casi todos los transcriptores automáticos. Cuando solo aceptaba la
+ * forma capitalizada, una transcripción con hablantes en mayúsculas pasaba
+ * entera sin detectar un solo nombre.
  */
-const HABLANTE =
-  /^[ \t]*(?:\[[^\]]{1,20}\]\s*)?([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){0,3})\s*:/gm;
+const PALABRA_NOMBRE = "[A-ZÁÉÍÓÚÑ](?:[a-záéíóúñ]+|[A-ZÁÉÍÓÚÑ]+)";
+const HABLANTE = new RegExp(
+  `^[ \\t]*(?:\\[[^\\]]{1,20}\\]\\s*)?(${PALABRA_NOMBRE}(?:\\s+${PALABRA_NOMBRE}){0,3})\\s*:`,
+  "gm",
+);
 
 function esNombrePlausible(s: string): boolean {
   const palabras = s.trim().split(/\s+/);
@@ -129,9 +143,17 @@ function escapar(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/**
+ * Todas las búsquedas de una entidad ignoran mayúsculas. En una transcripción
+ * el mismo nombre aparece como «Marcela» en el diálogo y como «MARCELA:» en la
+ * etiqueta de hablante: distinguirlos dejaría la mitad sin sustituir.
+ */
+function busqueda(aguja: string): RegExp {
+  return new RegExp(escapar(aguja), "gi");
+}
+
 function contar(texto: string, aguja: string): number {
-  const re = new RegExp(escapar(aguja), "g");
-  return (texto.match(re) ?? []).length;
+  return (texto.match(busqueda(aguja)) ?? []).length;
 }
 
 /**
@@ -144,14 +166,17 @@ export function detectarConReglas(texto: string): Sustitucion[] {
   function registrar(valor: string, tipo: TipoEntidad, offset: number) {
     const limpio = valor.trim().replace(/[.,;:]$/, "");
     if (limpio.length < 3) return;
-    if (encontrados.has(limpio)) return;
+    // La comparación ignora mayúsculas: «MARCELA» y «Marcela» son la misma
+    // persona y tienen que compartir etiqueta, no recibir dos distintas.
+    const clave = limpio.toLowerCase();
+    if (encontrados.has(clave)) return;
     // Si ya se detectó como parte de otra entidad más larga, no se duplica.
     for (const s of encontrados.values()) {
-      if (s.original.includes(limpio)) return;
+      if (s.original.toLowerCase().includes(clave)) return;
     }
     const n = (contadores[tipo] ?? 0) + 1;
     contadores[tipo] = n;
-    encontrados.set(limpio, {
+    encontrados.set(clave, {
       original: limpio,
       reemplazo: `[${ETIQUETAS[tipo]}_${n}]`,
       tipo,
@@ -195,7 +220,7 @@ export function aplicar(texto: string, subs: Sustitucion[]): string {
 
   let salida = texto;
   for (const s of activas) {
-    salida = salida.replace(new RegExp(escapar(s.original), "g"), s.reemplazo);
+    salida = salida.replace(busqueda(s.original), s.reemplazo);
   }
   return salida;
 }
@@ -208,9 +233,23 @@ export function resumen(subs: Sustitucion[]): { tipo: TipoEntidad; cuantas: numb
   return [...cuenta.entries()].map(([tipo, cuantas]) => ({ tipo, cuantas }));
 }
 
-/** ¿Queda algo identificable evidente sin sustituir? Chequeo de seguridad. */
+/**
+ * ¿Queda algo identificable evidente sin sustituir? Chequeo de seguridad.
+ *
+ * Mira correos y teléfonos, y además si sobrevivió alguna etiqueta de hablante
+ * con pinta de nombre propio. Este último caso es el que importa: antes daba
+ * «limpio» sobre un texto en el que los nombres seguían enteros, y una falsa
+ * tranquilidad en algo de privacidad es peor que no decir nada.
+ */
 export function quedaAlgoSinRevisar(texto: string): boolean {
-  return /[\w.%+-]+@[\w-]+\.[\w.]{2,}/.test(texto) || /\b3\d{2}[\s-]?\d{3}[\s-]?\d{4}\b/.test(texto);
+  if (/[\w.%+-]+@[\w-]+\.[\w.]{2,}/.test(texto)) return true;
+  if (/\b3\d{2}[\s-]?\d{3}[\s-]?\d{4}\b/.test(texto)) return true;
+
+  for (const m of texto.matchAll(HABLANTE)) {
+    const nombre = m[1];
+    if (nombre && esNombrePlausible(nombre)) return true;
+  }
+  return false;
 }
 
 
@@ -235,10 +274,14 @@ export function fusionarPropuestas(
   for (const prop of propuestas) {
     const valor = prop.original.trim();
     if (valor.length < 3) continue;
-    if (salida.some((s) => s.original === valor || s.original.includes(valor))) continue;
-    if (!texto.includes(valor)) continue;
+    const clave = valor.toLowerCase();
+    // Ignorando mayúsculas, para no darle dos etiquetas a la misma persona
+    // cuando el modelo propone «Marcela» y las reglas ya cogieron «MARCELA».
+    if (salida.some((s) => s.original.toLowerCase().includes(clave))) continue;
+    if (!busqueda(valor).test(texto)) continue;
 
-    const tipo: TipoEntidad = prop.tipo === "empresa" ? "empresa" : "persona";
+    const tipo: TipoEntidad =
+      prop.tipo === "empresa" ? "empresa" : prop.tipo === "cargo" ? "cargo" : "persona";
     const n = (contadores[tipo] ?? 0) + 1;
     contadores[tipo] = n;
 
@@ -247,9 +290,13 @@ export function fusionarPropuestas(
       reemplazo: `[${ETIQUETAS[tipo]}_${n}]`,
       tipo,
       ocurrencias: contar(texto, valor),
-      primerOffset: texto.indexOf(valor),
+      primerOffset: texto.search(new RegExp(escapar(valor), "i")),
       origen: "modelo",
-      aceptada: true,
+      // Un cargo por sí solo no identifica a nadie —«gerente de planta» no es
+      // una persona— y borrarlo le quita contexto al documento. Se propone,
+      // pero marcado para que el analista lo acepte solo si en su reunión ese
+      // cargo señala a alguien concreto.
+      aceptada: tipo !== "cargo",
     });
   }
 

@@ -76,13 +76,18 @@ export default async function handler(req: Peticion, res: Respuesta) {
         generationConfig: {
           temperature: temperatura ?? 0.2,
           topP: topP ?? 0.9,
-          maxOutputTokens: maxTokens ?? 4096,
+          // El presupuesto cubre el razonamiento del modelo además del texto
+          // que devuelve. Con 4096 el razonamiento se comía casi todo (3.933
+          // de 4.096 en una prueba real) y el documento salía cortado a mitad
+          // de frase. El tope del modelo es 65.536; 32.768 deja margen de
+          // sobra para una transcripción larga sin pedir el máximo.
+          maxOutputTokens: maxTokens ?? 32768,
         },
       }),
     });
 
     const datos = (await r.json()) as {
-      candidates?: { content?: { parts?: { text?: string }[] } }[];
+      candidates?: { content?: { parts?: { text?: string }[] }; finishReason?: string }[];
       usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number };
       error?: { message?: string };
     };
@@ -102,9 +107,15 @@ export default async function handler(req: Peticion, res: Respuesta) {
       return res.status(502).json({ error: "El modelo devolvió una respuesta vacía." });
     }
 
+    // Un documento cortado no puede viajar como si estuviera terminado: quien
+    // llama tiene que poder avisarlo en pantalla.
+    const motivo = datos.candidates?.[0]?.finishReason;
+
     return res.status(200).json({
       texto,
       simulado: false,
+      truncado: motivo === "MAX_TOKENS",
+      motivoFin: motivo ?? null,
       modelo: nombreModelo,
       tokensEntrada: datos.usageMetadata?.promptTokenCount ?? null,
       tokensSalida: datos.usageMetadata?.candidatesTokenCount ?? null,

@@ -419,6 +419,64 @@ simulación y el archivado a Drive no sale. Los valores están en su `.env.local
 
 ---
 
+### 2026-08-22 — Prueba con una transcripción real: tres fallos y sus arreglos
+
+Hasta aquí el motor se había verificado con datos fabricados por mí, que se
+parecían demasiado a lo que el código esperaba. Con una transcripción real de
+levantamiento (58 min, 1.190 palabras, con desacuerdo entre dos participantes y
+cifras corregidas a mitad de frase) salieron tres fallos que las pruebas
+anteriores no podían ver.
+
+**1. El documento salía cortado a mitad de frase.** `maxOutputTokens` estaba en
+4.096, y ese presupuesto cubre también el razonamiento del modelo: en la medición
+se fueron **3.933 tokens en razonar y quedaron 159 para el documento**, con
+`finishReason: MAX_TOKENS`. Subido a 32.768 el documento sale completo (7.933
+caracteres, `finishReason: STOP`). Además la respuesta ahora viaja con
+`truncado`, y la interfaz marca «cortado»: antes un documento truncado se
+devolvía como si estuviera terminado.
+
+**2. La transcripción «anonimizada» conservaba los nombres.** El regex de
+hablante exigía `[A-Z][a-z]+`, así que `MARCELA:` en mayúsculas —como escriben
+casi todos los transcriptores— no se detectaba, y `aplicar` reemplazaba sin
+ignorar mayúsculas. Resultado: **59 apariciones de los tres nombres seguían en el
+texto** y `quedaAlgoSinRevisar` devolvía `false`, o sea que la aplicación
+aseguraba que estaba limpio. Se arregló el regex, se hicieron las búsquedas y la
+deduplicación insensibles a mayúsculas, y el chequeo de seguridad ahora también
+mira si sobrevivió alguna etiqueta de hablante con pinta de nombre. Verificado:
+71 apariciones sustituidas, cero fugas.
+
+De paso apareció que los cargos genéricos —«gerente de planta», «jefe de
+seguridad»— se convertían en `[PERSONA_n]`, lo que no protege a nadie y le quita
+contexto al documento. Ahora existe el tipo `cargo`, se propone pero **no se
+acepta solo**: lo decide el analista.
+
+**3. La trazabilidad marcaba 0 % sobre un documento correcto.** Comparaba cada
+requerimiento contra una sola frase, pero un requerimiento redactado en formal se
+apoya en varias frases seguidas del diálogo. Se pasó a una ventana de tres frases
+contiguas y se recalibró el umbral con medición, no a ojo:
+
+| | puntaje |
+| --- | --- |
+| 9 requerimientos legítimos del documento | 21 % – 38 % |
+| 5 requerimientos inventados a propósito | 0 % – 14 % |
+
+El umbral bajó de 0,34 a **0,20**, en medio de las dos franjas. Resultado: 9/9
+respaldados y 0/5 inventados colados. La calibración es sobre una sola reunión;
+si con más transcripciones aparecen inventados por encima del 20 %, hay que
+subirlo.
+
+**Lo que sí funcionó a la primera:** el prompt de la versión 3 (4/4 capas), la
+generación con el modelo real, y el documento resultante, que recoge el
+desacuerdo entre los dos participantes como conflicto abierto, la cifra corregida
+(62 → ~30) y la pregunta de quién autoriza en el turno nocturno.
+
+**Probado también en producción:** con sesión iniciada se creó el proyecto
+*Proyecto ACCESO*, su carpeta se creó sola en Drive y el id quedó guardado en
+Supabase (`carpeta_drive`). Eso cierra el circuito aplicación desplegada →
+Make → Drive → base de datos.
+
+---
+
 ## Cómo retomar si se pierde la sesión
 
 1. Lee este archivo y `PROMPT.md` (el encargo completo).

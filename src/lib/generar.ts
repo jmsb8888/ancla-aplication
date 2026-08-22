@@ -11,6 +11,8 @@ export interface Parte {
   texto: string;
   error?: string;
   duracionMs?: number;
+  /** El modelo se quedó sin presupuesto: el texto está cortado. */
+  truncado?: boolean;
 }
 
 export interface ProgresoGeneracion {
@@ -18,6 +20,8 @@ export interface ProgresoGeneracion {
   /** Texto acumulado hasta ahora, en orden */
   documento: string;
   simulado: boolean;
+  /** Alguna parte salió cortada por tope de tokens. */
+  truncado: boolean;
   terminado: boolean;
 }
 
@@ -46,7 +50,7 @@ export function partesIniciales(modo: ModoGeneracion = "troceado"): Parte[] {
 async function llamar(
   prompt: string,
   opciones: OpcionesModelo,
-): Promise<{ texto: string; simulado: boolean; duracionMs: number }> {
+): Promise<{ texto: string; simulado: boolean; truncado: boolean; duracionMs: number }> {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
 
@@ -62,6 +66,7 @@ async function llamar(
   const cuerpo = (await r.json()) as {
     texto?: string;
     simulado?: boolean;
+    truncado?: boolean;
     duracionMs?: number;
     error?: string;
   };
@@ -70,6 +75,7 @@ async function llamar(
   return {
     texto: cuerpo.texto ?? "",
     simulado: !!cuerpo.simulado,
+    truncado: !!cuerpo.truncado,
     duracionMs: cuerpo.duracionMs ?? 0,
   };
 }
@@ -98,6 +104,7 @@ export async function generarDocumento(
         .map((p) => p.texto)
         .join("\n\n"),
       simulado,
+      truncado: partes.some((p) => p.truncado),
       terminado,
     });
 
@@ -115,6 +122,7 @@ export async function generarDocumento(
       parte.texto = r.texto;
       parte.estado = "lista";
       parte.duracionMs = r.duracionMs;
+      parte.truncado = r.truncado;
       simulado = simulado || r.simulado;
     } catch (e) {
       parte.estado = "error";
@@ -130,6 +138,7 @@ export async function generarDocumento(
       .map((p) => p.texto)
       .join("\n\n"),
     simulado,
+    truncado: partes.some((p) => p.truncado),
     terminado: true,
   };
   alAvanzar(resultado);

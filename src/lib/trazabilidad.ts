@@ -47,20 +47,68 @@ export interface Respaldo {
   respaldado: boolean;
 }
 
-export const UMBRAL = 0.34;
+/**
+ * Umbral de respaldo, medido y no elegido a ojo.
+ *
+ * Sobre una transcripción real de levantamiento (58 min, 1.190 palabras) y el
+ * documento que salió de ella, los requerimientos legítimos puntuaron entre
+ * 21 % y 38 %. Cinco requerimientos inventados a propósito —notificaciones
+ * push, pasarela de pagos, biometría facial, ISO 27001, solicitud de
+ * vacaciones— puntuaron entre 0 % y 14 %. El corte va en medio de esas dos
+ * franjas, no pegado a ninguna.
+ *
+ * Con el 0,34 anterior el documento entero salía «0 % respaldado»: un aviso
+ * que se dispara siempre no avisa de nada, y el analista aprende a ignorarlo.
+ *
+ * La calibración se hizo sobre una sola reunión. Si con más transcripciones
+ * aparecen inventados por encima del 20 %, hay que subirlo: equivocarse
+ * marcando de más solo cuesta una revisión; equivocarse marcando de menos deja
+ * pasar un requerimiento que nadie pidió.
+ */
+export const UMBRAL = 0.2;
+
+/**
+ * Cuántas frases contiguas se miran a la vez.
+ *
+ * Un requerimiento redactado en formal casi nunca cabe en una sola frase de la
+ * conversación: lo que en el documento es «el sistema debe validar la marca de
+ * acceso contra el turno programado» en la reunión se dijo repartido entre la
+ * queja, la pregunta del analista y la respuesta. Comparando frase a frase,
+ * requerimientos perfectamente respaldados se quedaban en el 20-30 % y el
+ * documento salía con «0 % respaldado», que es tan inútil como decir que todo
+ * está bien.
+ *
+ * Tres es el intercambio típico —quien plantea, quien pregunta, quien
+ * responde— y sigue siendo una ventana corta: no vale que los términos
+ * aparezcan sueltos por toda la transcripción.
+ */
+const VENTANA = 3;
 
 export function buscarRespaldo(requerimiento: string, transcripcion: string): Respaldo {
   const term = tokens(requerimiento);
   if (!term.length) return { puntaje: 0, cita: null, offset: null, respaldado: false };
 
+  const fs = frases(transcripcion);
   let mejor = { puntaje: 0, cita: null as string | null, offset: null as number | null };
 
-  for (const f of frases(transcripcion)) {
-    const enFrase = new Set(tokens(f.texto));
-    if (!enFrase.size) continue;
-    const comunes = term.filter((t) => enFrase.has(t)).length;
-    const puntaje = comunes / term.length;
-    if (puntaje > mejor.puntaje) mejor = { puntaje, cita: f.texto, offset: f.offset };
+  for (let i = 0; i < fs.length; i++) {
+    const acumulado = new Set<string>();
+    for (let n = 0; n < VENTANA && i + n < fs.length; n++) {
+      for (const t of tokens(fs[i + n].texto)) acumulado.add(t);
+      if (!acumulado.size) continue;
+
+      const comunes = term.filter((t) => acumulado.has(t)).length;
+      const puntaje = comunes / term.length;
+      if (puntaje > mejor.puntaje) {
+        // Se cita la ventana entera: es lo que respalda el requerimiento, y
+        // recortarla a una frase daría una cita que no sostiene lo que dice.
+        mejor = {
+          puntaje,
+          cita: fs.slice(i, i + n + 1).map((f) => f.texto).join(" "),
+          offset: fs[i].offset,
+        };
+      }
+    }
   }
 
   return { ...mejor, respaldado: mejor.puntaje >= UMBRAL };

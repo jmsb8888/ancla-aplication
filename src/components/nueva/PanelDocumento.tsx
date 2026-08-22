@@ -102,6 +102,14 @@ export function PanelDocumento({ anclaje, progreso, corriendo, onReintentar, met
               simulación
             </span>
           )}
+          {progreso.truncado && (
+            <span
+              title="El modelo agotó su presupuesto de tokens: el documento está cortado. Vuelve a generar o usa el modo troceado."
+              className="rounded border border-danger px-1.5 py-0.5 font-mono text-[9px] uppercase text-danger"
+            >
+              cortado
+            </span>
+          )}
         </div>
         <ul aria-live="polite">
           {progreso.partes.map((p) => (
