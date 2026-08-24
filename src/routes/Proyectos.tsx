@@ -51,22 +51,29 @@ export default function Proyectos() {
         return null;
       }
 
+      // Primero la fila, después la carpeta.
+      //
+      // El orden importa: si el nombre ya existe, el índice único rechaza el
+      // insert. Creando la carpeta antes, esa carpeta se quedaba en Drive sin
+      // proyecto que la reclamara, y como Drive admite nombres repetidos nadie
+      // se enteraba. Creando la fila primero, un nombre repetido falla sin
+      // dejar rastro.
+      const creado = await crearProyecto({ ...b, carpeta_drive: b.carpeta_drive.trim() });
+
       // Sin carpeta escrita a mano, la automatización crea una con el nombre
       // del proyecto dentro de la carpeta madre. Se pide una sola vez, aquí,
       // porque Drive admite nombres repetidos y no deduplica por su cuenta.
-      let carpeta = b.carpeta_drive.trim();
-      let problema: string | null = null;
-      if (!carpeta && !modoDemo()) {
-        try {
-          carpeta = await crearCarpetaDeProyecto(b.nombre.trim());
-        } catch (e) {
-          // El proyecto se crea igual: poder trabajar pesa más que archivar.
-          problema = e instanceof Error ? e.message : "No se pudo crear la carpeta en Drive.";
-        }
-      }
+      if (creado.carpeta_drive || modoDemo()) return null;
 
-      await crearProyecto({ ...b, carpeta_drive: carpeta });
-      return problema;
+      try {
+        const carpeta = await crearCarpetaDeProyecto(creado.nombre);
+        await actualizarProyecto(creado.id, { carpeta_drive: carpeta });
+        return null;
+      } catch (e) {
+        // El proyecto ya existe y sirve: poder trabajar pesa más que archivar.
+        // Queda sin carpeta y se avisa; se puede pegar el id a mano editándolo.
+        return e instanceof Error ? e.message : "No se pudo crear la carpeta en Drive.";
+      }
     },
     onSuccess: (problema) => {
       setBorrador(null);

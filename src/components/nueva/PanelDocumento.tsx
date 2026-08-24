@@ -84,7 +84,12 @@ export function PanelDocumento({ anclaje, progreso, corriendo, onReintentar, met
       <div className="shrink-0 border-b border-line py-1">
         <div className="flex flex-wrap items-center gap-2 px-4 py-1">
           <span className="mr-auto rotulo-menor">
-            {corriendo ? `Parte ${listas + 1} de 6` : `${listas} de 6 partes`}
+            {/* El total sale de las partes reales, no de un 6 fijo: en modo de
+                una llamada solo hay una, y decir «1 de 6 partes» hacía parecer
+                que faltaban cinco sobre un documento ya terminado. */}
+            {corriendo
+              ? `Parte ${listas + 1} de ${progreso.partes.length}`
+              : `${listas} de ${progreso.partes.length} ${progreso.partes.length === 1 ? "parte" : "partes"}`}
           </span>
           {anclaje && anclaje.total > 0 && (
             <span
