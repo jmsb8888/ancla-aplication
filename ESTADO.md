@@ -39,17 +39,37 @@ del proyecto.
 
 ### Cola de trabajo, por orden
 
-1. **`AUTOMATION_SECRET` vacío en Vercel**, y los escenarios de Make no validan
-   la cabecera `X-Webhook-Secret`. Hoy la única protección es que la URL del
-   webhook no se conozca. Hay que cerrar las dos puntas a la vez: poner el valor
-   en Vercel **y** añadir el filtro en los dos escenarios.
-2. **Auditoría pendiente:** límite de peticiones por usuario en `/api`,
-   `search_path` en `tocar_updated_at`, revocar `EXECUTE` en `crear_perfil`,
-   escribir filas en `exportaciones`, y decidir qué hacer con la pantalla
-   *Plantillas*, que quedó sin uso.
-3. **Restos de prueba en Drive:** dentro de `Ancla R-01` sobran
-   `prueba-ancla.txt`, `Proyecto de prueba API` y una carpeta `Proyecto ACCESO`
-   duplicada (la de las 10:50; la buena es la de las 11:26).
+Nada de esto impide usar la aplicación. Son deudas, no fallos.
+
+1. **El webhook no está protegido.** `AUTOMATION_SECRET` sigue vacío en Vercel
+   **y** los dos escenarios de Make no validan la cabecera `X-Webhook-Secret`.
+   Hoy la única protección es que la URL no se conozca. Hay que cerrar las dos
+   puntas a la vez: poner el valor en Vercel y añadir el filtro en cada
+   escenario. Arreglar solo una de las dos rompe el archivado.
+2. **Avisos del linter de Supabase** (0 errores, 7 avisos):
+   - `search_path` sin fijar en `tocar_updated_at`
+   - `crear_perfil` y `rls_auto_enable` ejecutables por `anon` y `authenticated`
+     siendo `SECURITY DEFINER` — hay que revocar `EXECUTE`
+   - protección de contraseñas filtradas y MFA desactivadas (ajustes de Auth,
+     se activan desde el panel de Supabase)
+3. **`/api` sin límite de peticiones por usuario.** Con sesión válida se puede
+   llamar al modelo sin tope. Es cuota, no seguridad, pero conviene antes de
+   enseñarla a nadie más.
+4. **La tabla `exportaciones` no se escribe.** Existe con RLS y nadie inserta en
+   ella: cada exportación a PDF/Word/Markdown debería dejar su fila.
+5. **Restos de prueba.** En Drive, dentro de `Ancla R-01`: `prueba-ancla.txt`,
+   `Proyecto de prueba API`, una carpeta `Proyecto ACCESO` duplicada (la de las
+   10:50) y dos PDF con el mismo nombre (el bueno es el de 46 KB). En Supabase,
+   dos reuniones de prueba con cuatro documentos.
+
+### Ideas que no son deuda, por si hacen falta
+
+- **Subir el `.docx` desde la aplicación.** Hoy el documento de referencia se
+  pega como texto; el Word hay que convertirlo aparte. Con el convertidor ya
+  escrito (`material-md/_scripts/docx2md.py`) sería añadir el botón.
+- **Plantillas compartidas entre proyectos.** Se retiró la pantalla porque la
+  plantilla por proyecto cubre el caso; si aparecen varios clientes con el mismo
+  formato, volvería a tener sentido.
 
 ### Cómo levantar el entorno
 
