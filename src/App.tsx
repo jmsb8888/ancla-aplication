@@ -7,7 +7,6 @@ import Reunion from "./routes/Reunion";
 import Nueva from "./routes/Nueva";
 import Comparar from "./routes/Comparar";
 import Metricas from "./routes/Metricas";
-import Plantillas from "./routes/Plantillas";
 import Proyectos from "./routes/Proyectos";
 
 export default function App() {
@@ -24,7 +23,6 @@ export default function App() {
           <Route path="reuniones/:id" element={<Reunion />} />
           <Route path="comparar" element={<Comparar />} />
           <Route path="metricas" element={<Metricas />} />
-          <Route path="plantillas" element={<Plantillas />} />
           <Route path="proyectos" element={<Proyectos />} />
         </Route>
       )}
@@ -42,7 +40,6 @@ export default function App() {
         <Route path="/nueva" element={<Nueva />} />
         <Route path="/comparar" element={<Comparar />} />
         <Route path="/metricas" element={<Metricas />} />
-        <Route path="/plantillas" element={<Plantillas />} />
         <Route path="/proyectos" element={<Proyectos />} />
         <Route path="*" element={<Navigate to="/reuniones" replace />} />
       </Route>

@@ -130,33 +130,6 @@ export type Database = {
           },
         ]
       }
-      plantillas: {
-        Row: {
-          contenido: string
-          created_at: string
-          id: string
-          nombre: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          contenido?: string
-          created_at?: string
-          id?: string
-          nombre: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          contenido?: string
-          created_at?: string
-          id?: string
-          nombre?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           created_at: string

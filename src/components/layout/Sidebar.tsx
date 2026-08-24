@@ -2,7 +2,6 @@ import { NavLink } from "react-router-dom";
 import {
   BarChart3,
   Columns3,
-  FileStack,
   FolderGit2,
   FolderOpen,
   PlusCircle,
@@ -14,7 +13,6 @@ const enlaces = [
   { a: "/nueva", icono: PlusCircle, texto: "Nueva" },
   { a: "/comparar", icono: Columns3, texto: "Comparar" },
   { a: "/metricas", icono: BarChart3, texto: "Métricas" },
-  { a: "/plantillas", icono: FileStack, texto: "Plantillas" },
 ];
 
 export function Sidebar() {
