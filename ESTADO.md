@@ -52,9 +52,24 @@ Quedó de cuando la generación se troceaba. Hoy es una sola llamada.
 | Exportar Word | Blob capturado | 6.637 bytes, `.doc` |
 | Exportar PDF | PDF abierto y analizado | 3 páginas, sin asteriscos sueltos, **`Roboto-Italic` incrustada** |
 
-Sin verificar hoy: el envío a Drive (añadiría un archivo a la carpeta ya
-limpia) y una generación nueva contra el modelo (los cuatro documentos de hoy
-ya la respaldan).
+### Cierre: circuito completo corrido de nuevo, 11:42
+
+Autorizado por José, se hizo el recorrido entero con los cambios de hoy ya
+desplegados. Reunión **«Validación final — prueba de extremo a extremo»**:
+
+| Paso | Resultado |
+|---|---|
+| Anonimizar (`/api/anonimizar`) | Pasa el control de fugas |
+| Documento de referencia | Heredado del proyecto, 3.813 caracteres |
+| Generar (`/api/generate`) | 348 palabras · 1 llamada · 0 partes con error · 19.143 ms |
+| Formato del resultado | Adopta el modelo del documento de referencia (`REQ-ACC-001`) |
+| Guardado en Supabase | Reunión + documento + requerimientos |
+| Trazabilidad | **100 %**, 2 de 2 requerimientos anclados |
+| Enviar a Drive (`/api/drive` → Make) | Subido, con enlace de vuelta |
+| Comprobado en Drive | `R-01_Proyecto ACCESO_2026-08-24_v3.pdf`, 34 KB, 11:43 |
+
+**Ya no queda nada sin verificar.** Los restos de esta prueba —la reunión en
+Supabase y ese PDF en Drive— se pueden borrar o dejar como evidencia.
 
 ---
 
