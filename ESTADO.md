@@ -3,7 +3,58 @@
 > Archivo de control. Se actualiza al terminar cada etapa. Si se pierde la sesión,
 > este archivo dice exactamente dónde quedamos y qué sigue.
 >
-> **Última actualización:** 2026-08-22 · Circuito completo verificado en producción
+> **Última actualización:** 2026-08-24 · Revisión general: tres defectos corregidos
+
+---
+
+## ✅ Estado — 24/08/2026 · Revisión general
+
+Barrido de las seis pantallas contra producción, con la sesión real. Se
+encontraron y corrigieron **tres defectos**; ninguno tocaba los datos.
+
+### 1 · La pantalla decía «no hay nada» cuando lo que había era un fallo
+
+Al abrir `/reuniones` con el token caducado, Supabase respondió `JWT expired`.
+React Query apaga `isLoading` **entre un reintento y el siguiente**, así que
+durante esos siete segundos la pantalla caía al estado vacío: anunciaba «Sin
+reuniones registradas» habiendo dos guardadas. Reproducido a propósito
+interceptando la petición. Corregido usando `isPending`, que se mantiene hasta
+que hay dato o error, en Reuniones, Reunión, Comparar, Métricas y Proyectos.
+
+Conviene recordar el susto: **la pantalla vacía parecía pérdida de datos y no lo
+era.** Consultada la base directamente, estaban las 2 reuniones, los 5
+documentos, los 16 requerimientos y el proyecto.
+
+### 2 · Las cursivas salían como asteriscos
+
+El documento v1 escribe las opciones como `*Opción A (...)*`, y los tres
+renderizadores —pantalla, Word y PDF— solo entendían la negrita. Corregido en
+los tres. La cursiva se reconoce **después** de la negrita, porque `**x**`
+también empieza por asterisco; verificado con siete casos, incluido `2 * 3`,
+que no debe convertirse en nada.
+
+### 3 · El panel del documento prometía seis llamadas
+
+Quedó de cuando la generación se troceaba. Hoy es una sola llamada.
+
+### Lo que se comprobó abriéndolo, no suponiéndolo
+
+| Qué | Cómo se verificó | Resultado |
+|---|---|---|
+| Despliegue | Hash del bundle en producción contra el compilado local | Coinciden |
+| `/api` (4 funciones) | POST sin sesión | Las cuatro responden `401` |
+| Proyectos, Reuniones, Reunión, Comparar, Métricas, Nueva | Navegadas con sesión real | Todas con datos correctos |
+| Comparar | Las 3 versiones lado a lado | 5 / 6 / 16 secciones · 329 / 320 / 870 palabras |
+| Métricas | Contra la base | 5 documentos · v1:1 v2:2 v3:2 — cuadra |
+| Anonimizado | Texto de los documentos guardados | Solo `[CLIENTE_1]`, `[PERSONA_1..3]` |
+| Trazabilidad | Panel de la reunión | 67 %, y señala `RNF-01` sin frase que lo respalde |
+| Exportar Markdown | Blob capturado | 5.580 bytes |
+| Exportar Word | Blob capturado | 6.637 bytes, `.doc` |
+| Exportar PDF | PDF abierto y analizado | 3 páginas, sin asteriscos sueltos, **`Roboto-Italic` incrustada** |
+
+Sin verificar hoy: el envío a Drive (añadiría un archivo a la carpeta ya
+limpia) y una generación nueva contra el modelo (los cuatro documentos de hoy
+ya la respaldan).
 
 ---
 
