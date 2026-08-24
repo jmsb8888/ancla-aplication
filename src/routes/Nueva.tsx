@@ -312,9 +312,11 @@ export default function Nueva() {
   ] as const;
 
   return (
-    <div className="flex h-full flex-col md:flex-row">
+    <div className="flex h-full flex-col">
       {/* Se llegó desde Comparar para añadir otra versión: hay que decirlo, o
-          parece que se está creando una reunión nueva y duplicada. */}
+          parece que se está creando una reunión nueva y duplicada.
+          Va fuera del contenedor horizontal: como hijo suyo se comía el ancho
+          de una de las tres columnas y los paneles se solapaban. */}
       {reunionId && (
         <p
           role="status"
@@ -326,6 +328,7 @@ export default function Nueva() {
         </p>
       )}
 
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
       {/* Pestañas: solo cuando los tres paneles no caben de lado a lado */}
       <div
         role="tablist"
@@ -669,7 +672,8 @@ export default function Nueva() {
             fecha: new Date().toISOString().slice(0, 10),
           }}
         />
-      </section>
+        </section>
+      </div>
     </div>
   );
 }
