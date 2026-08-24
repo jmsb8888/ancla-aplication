@@ -69,8 +69,7 @@ export function PanelDocumento({ anclaje, progreso, corriendo, onReintentar, met
       <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
         <FileText size={20} className="text-faint" strokeWidth={1.5} />
         <p className="max-w-xs text-sm text-muted">
-          El documento se escribirá aquí parte por parte, a medida que llegue cada una de
-          las seis llamadas.
+          El documento aparecerá aquí en cuanto termine la generación.
         </p>
       </div>
     );
