@@ -3,36 +3,33 @@
 > Archivo de control. Se actualiza al terminar cada etapa. Si se pierde la sesión,
 > este archivo dice exactamente dónde quedamos y qué sigue.
 >
-> **Última actualización:** 2026-08-21 · Modo de una llamada y modelos actuales
+> **Última actualización:** 2026-08-22 · Circuito completo verificado en producción
 
 ---
 
-## ⏸ Dónde quedamos — 22/08/2026, fin de jornada
+## ✅ Estado — 22/08/2026
 
-**Último commit en `main`: `d530d2e`**, subido y desplegado. Árbol limpio.
+**Todo el circuito está verificado en producción, mirando el resultado, no
+suponiéndolo.** No queda nada pendiente de comprobar.
 
-### Lo único pendiente de comprobar
+### El PDF, verificado abriéndolo
 
-`d530d2e` corrige los anchos de columna del PDF. pdfmake solo acepta `'auto'`,
-`'*'` o **números**; se le estaban pasando `'2*'` y rechazaba el documento entero
-con `unsupported number`, así que no llegaba nada a Drive.
+`d530d2e` corrigió los anchos de columna (pdfmake solo acepta `'auto'`, `'*'` o
+**números**; se le pasaban `'2*'` y rechazaba el documento entero con
+`unsupported number`, así que no llegaba nada a Drive).
 
-**Ese arreglo está desplegado pero NO verificado.** Para cerrarlo:
+Comprobado en el navegador con el documento real, las cuatro páginas:
 
-1. Abrir <https://ancla-aplication.vercel.app/reuniones> → la reunión
-   *Levantamiento Proyecto ACCESO — 14 de julio*.
-2. Pulsar **Enviar a Drive**. Ojo: si la pestaña llevaba rato abierta, recargar
-   antes con Ctrl+F5 — con el JavaScript viejo en memoria el envío falla en
-   silencio.
-3. Debe aparecer «Subido: …». Si hay error, sale justo debajo del botón.
-4. Abrir el PDF en `Mi unidad › Ancla R-01 › Proyecto ACCESO` y mirar que:
-   - los rótulos (`Proyecto:`, `RF-01`, `Estado:`) salgan **en negrita**;
-   - la columna «Descripción» sea ancha y «Prioridad» estrecha;
-   - no haya `---` sueltos impresos como texto.
+- Los rótulos (`Proyecto:`, `Cliente:`, `Molinete:`, `RF-01`) salen **en negrita**.
+- La tabla de requerimientos respira: descripción ancha, código y prioridad
+  estrechos. Antes se partía cada cuatro palabras.
+- No queda ningún `---` impreso como texto; son líneas horizontales.
+- La matriz de trazabilidad y la nota de cierre maquetan bien.
 
-Si algo falla, el código está en `src/lib/exportar.ts`, función `mdAPdf`.
+El PDF bueno en Drive es el de **46 KB**. El de 45 KB es el defectuoso de la
+ronda anterior y se puede borrar.
 
-### Lo que ya funciona y está verificado en producción
+### Lo que funciona y está verificado en producción
 
 Recorrido completo con sesión real: proyecto → carpeta creada sola en Drive →
 transcripción → anonimizado (71 apariciones sustituidas, 0 fugas) → prompt v3
@@ -42,17 +39,15 @@ del proyecto.
 
 ### Cola de trabajo, por orden
 
-1. **Verificar el PDF** (arriba). Es lo único que bloquea dar por buena la
-   exportación.
-2. **`AUTOMATION_SECRET` vacío en Vercel**, y los escenarios de Make no validan
+1. **`AUTOMATION_SECRET` vacío en Vercel**, y los escenarios de Make no validan
    la cabecera `X-Webhook-Secret`. Hoy la única protección es que la URL del
    webhook no se conozca. Hay que cerrar las dos puntas a la vez: poner el valor
    en Vercel **y** añadir el filtro en los dos escenarios.
-3. **Auditoría pendiente:** límite de peticiones por usuario en `/api`,
+2. **Auditoría pendiente:** límite de peticiones por usuario en `/api`,
    `search_path` en `tocar_updated_at`, revocar `EXECUTE` en `crear_perfil`,
    escribir filas en `exportaciones`, y decidir qué hacer con la pantalla
    *Plantillas*, que quedó sin uso.
-4. **Restos de prueba en Drive:** dentro de `Ancla R-01` sobran
+3. **Restos de prueba en Drive:** dentro de `Ancla R-01` sobran
    `prueba-ancla.txt`, `Proyecto de prueba API` y una carpeta `Proyecto ACCESO`
    duplicada (la de las 10:50; la buena es la de las 11:26).
 
@@ -76,13 +71,13 @@ abrir el documento y mirarlo.
 
 | Etapa | Qué es | Estado |
 |---|---|---|
-| 1 | Base: Vite + React + TS + Tailwind, tokens, rutas, layout, modo oscuro | ✅ terminada — falta desplegar en Vercel |
-| 2 | Datos y sesión: SQL de Supabase con RLS, registro, login, ruta protegida | 🔨 código listo — falta que José cree su cuenta y probemos con dos usuarios |
-| 3 | Motor: constructor de prompts, `/api/generate`, generación en 6 partes | ✅ funciona en simulación — falta la API key real |
-| 4 | Historial: listado, detalle, búsqueda, filtros, exportar PDF/Word/MD | 🔨 exportaciones probadas · guardado y listado escritos, sin probar (falta sesión) |
-| 5 | Anonimizador: dos pasadas + panel de revisión | ✅ las dos pasadas y el panel de revisión |
-| 6 | Trazabilidad, comparación de versiones y tablero de métricas | ✅ trazabilidad probada · pantallas listas |
-| 7 | Automatización a Drive por webhook | 🔨 `/api/drive` escrito y probado sin webhook — falta el escenario en Make |
+| 1 | Base: Vite + React + TS + Tailwind, tokens, rutas, layout, modo oscuro | ✅ desplegada en Vercel |
+| 2 | Datos y sesión: SQL de Supabase con RLS, registro, login, ruta protegida | ✅ probada en producción con sesión real |
+| 3 | Motor: constructor de prompts, `/api/generate`, generación | ✅ con la API key real, documento completo |
+| 4 | Historial: listado, detalle, búsqueda, filtros, exportar PDF/Word/MD | ✅ guardado, listado y PDF verificados abriendo el archivo |
+| 5 | Anonimizador: dos pasadas + panel de revisión | ✅ 71 apariciones sustituidas, 0 fugas |
+| 6 | Trazabilidad, comparación de versiones y tablero de métricas | ✅ 100 % respaldado con cita textual |
+| 7 | Automatización a Drive por webhook | ✅ dos escenarios en Make, PDF archivado en la carpeta del proyecto |
 | 8 | Pulido de interfaz pantalla por pantalla | ✅ crítica de diseño aplicada |
 | 9 | Proyectos: agrupar reuniones, plantilla y carpeta de Drive por proyecto | ✅ terminada |
 
