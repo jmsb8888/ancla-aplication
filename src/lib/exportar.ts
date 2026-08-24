@@ -103,7 +103,9 @@ function mdAHtml(md: string): string {
   const escapar = (s: string) =>
     s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const enLinea = (s: string) =>
-    escapar(s).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+    escapar(s)
+      .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+      .replace(/\*([^*\n]+)\*/g, "<i>$1</i>");
 
   const salida: string[] = [];
   const lineas = md.split("\n");
@@ -193,12 +195,21 @@ function mdAPdf(md: string): Content[] {
    * casi todos los rótulos van en negrita («**Proyecto:**», «**RF-01**»), el
    * PDF salía plano y costaba distinguir el rótulo del contenido.
    */
-  const rico = (s: string): string | (string | { text: string; bold: true })[] => {
+  const rico = (
+    s: string,
+  ): string | (string | { text: string; bold?: true; italics?: true })[] => {
     const limpio = s.replace(/`/g, "");
-    if (!limpio.includes("**")) return limpio;
+    if (!limpio.includes("*")) return limpio;
     return limpio
-      .split(/\*\*([^*]+)\*\*/g)
-      .map((trozo, k) => (k % 2 ? { text: trozo, bold: true as const } : trozo))
+      .split(/(\*\*[^*]+\*\*|\*[^*\n]+\*)/g)
+      .map((trozo) => {
+        if (trozo.startsWith("**") && trozo.endsWith("**"))
+          return { text: trozo.slice(2, -2), bold: true as const };
+        // La cursiva se comprueba después: «**x**» también empieza por «*».
+        if (trozo.startsWith("*") && trozo.endsWith("*") && trozo.length > 2)
+          return { text: trozo.slice(1, -1), italics: true as const };
+        return trozo;
+      })
       .filter((t) => (typeof t === "string" ? t.length > 0 : true));
   };
 

@@ -10,12 +10,22 @@ import type { ReactNode } from "react";
  */
 
 function conNegritas(texto: string, clave: string): ReactNode[] {
-  return texto.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).map((t, i) => {
+  // La cursiva va después de la negrita en la alternancia: si «*x*» fuera
+  // primero, se comería el primer asterisco de «**x**» y el resto saldría
+  // con los asteriscos a la vista.
+  return texto.split(/(\*\*[^*]+\*\*|\*[^*\n]+\*|`[^`]+`)/g).map((t, i) => {
     if (t.startsWith("**") && t.endsWith("**")) {
       return (
         <strong key={`${clave}-${i}`} className="font-semibold text-ink">
           {t.slice(2, -2)}
         </strong>
+      );
+    }
+    if (t.startsWith("*") && t.endsWith("*") && t.length > 2) {
+      return (
+        <em key={`${clave}-${i}`} className="italic">
+          {t.slice(1, -1)}
+        </em>
       );
     }
     if (t.startsWith("`") && t.endsWith("`") && t.length > 2) {
