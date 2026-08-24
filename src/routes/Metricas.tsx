@@ -70,7 +70,7 @@ export default function Metricas() {
     );
   }
 
-  if (consulta.isLoading) {
+  if (consulta.isPending) {
     return (
       <p className="flex items-center justify-center gap-2 py-20 rotulo">
         <Loader2 size={14} className="animate-spin" /> Calculando

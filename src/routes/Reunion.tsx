@@ -56,7 +56,7 @@ export default function Reunion() {
     onSuccess: () => cliente.invalidateQueries({ queryKey: ["documentos", id] }),
   });
 
-  if (reunion.isLoading || docs.isLoading) {
+  if (reunion.isPending || docs.isPending) {
     return (
       <p className="flex items-center justify-center gap-2 py-20 rotulo">
         <Loader2 size={14} className="animate-spin" /> Cargando

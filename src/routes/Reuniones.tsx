@@ -47,7 +47,13 @@ export default function Reuniones() {
     );
   }
 
-  if (consulta.isLoading) {
+  // `isPending`, no `isLoading`.
+  //
+  // React Query apaga `isLoading` entre un reintento y el siguiente, así que
+  // con el token vencido la pantalla caía al estado vacío durante los siete
+  // segundos de reintentos: decía «Sin reuniones registradas» teniendo dos
+  // guardadas. `isPending` sigue en pie hasta que hay dato o error.
+  if (consulta.isPending) {
     return (
       <p className="flex items-center justify-center gap-2 py-20 rotulo">
         <Loader2 size={14} className="animate-spin" />

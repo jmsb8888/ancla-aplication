@@ -273,7 +273,7 @@ export default function Proyectos() {
         </form>
       )}
 
-      {consulta.isLoading ? (
+      {consulta.isPending ? (
         <p className="flex items-center justify-center gap-2 py-16 font-mono text-xs text-faint">
           <Loader2 size={14} className="animate-spin" /> Cargando proyectos
         </p>
