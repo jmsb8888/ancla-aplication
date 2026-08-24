@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Columns3, Loader2 } from "lucide-react";
 import { listarDocumentos, listarReuniones, type DocumentoGuardado } from "../lib/datos";
@@ -151,9 +152,21 @@ export default function Comparar() {
                   {d ? (
                     renderMarkdown(d.contenido_md)
                   ) : (
-                    <p className="py-10 text-center text-xs text-faint">
-                      Genera esta versión sobre la misma reunión para compararla.
-                    </p>
+                    <div className="flex flex-col items-center gap-3 py-10 text-center">
+                      <p className="max-w-[22ch] text-xs text-faint">
+                        Esta versión todavía no se ha generado sobre esta reunión.
+                      </p>
+                      {/* Sin este enlace la comparación era inalcanzable: solo
+                          se podía generar otra versión sin salir de la pantalla
+                          de nueva reunión, así que estas columnas pedían algo
+                          que la aplicación no dejaba hacer. */}
+                      <Link
+                        to={`/nueva?reunion=${reunionId}&version=${v}`}
+                        className="rounded-md border border-line px-3 py-1.5 text-xs text-ink transition-colors duration-150 hover:border-accent hover:text-accent"
+                      >
+                        Generar la v{v} con esta transcripción
+                      </Link>
+                    </div>
                   )}
                 </div>
               </section>

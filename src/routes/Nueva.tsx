@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Info, Pencil, Play, ShieldCheck } from "lucide-react";
 import {
   construir,
@@ -32,6 +33,7 @@ import {
   guardarRequerimientos,
   listarProyectos,
   modoDemo,
+  obtenerReunion,
 } from "../lib/datos";
 import { useQuery } from "@tanstack/react-query";
 import { useSesion } from "../lib/sesion";
@@ -118,6 +120,74 @@ export default function Nueva() {
     const t = setTimeout(() => localStorage.setItem(BORRADOR, transcripcion), 400);
     return () => clearTimeout(t);
   }, [transcripcion]);
+
+  /**
+   * Generar otra versión sobre una reunión que ya existe.
+   *
+   * Se llega aquí desde Comparar, pulsando una de las versiones que todavía no
+   * se ha generado: `/nueva?reunion=<id>&version=<n>`. Sin esto, comparar las
+   * tres versiones era imposible en la práctica —solo se podía generar otra sin
+   * salir de esta pantalla— y las columnas vacías pedían algo que la aplicación
+   * no dejaba hacer.
+   *
+   * La transcripción que se carga ya viene anonimizada de la reunión original,
+   * así que se marca como revisada (`subs = []`): volver a pedir la revisión
+   * sobre un texto donde los nombres ya son etiquetas no aporta nada.
+   *
+   * Se compara la misma entrada con distinto prompt; por eso se reutiliza la
+   * reunión en vez de crear una nueva.
+   */
+  const [params, setParams] = useSearchParams();
+  const [cargandoReunion, setCargandoReunion] = useState(false);
+  useEffect(() => {
+    const id = params.get("reunion");
+    if (!id || reunionId === id) return;
+
+    let cancelado = false;
+    setCargandoReunion(true);
+    (async () => {
+      try {
+        const r = await obtenerReunion(id);
+        if (cancelado || !r) return;
+
+        setReunionId(id);
+        setTranscripcion(r.transcripcion_anonimizada ?? "");
+        setSubs([]);
+        setTitulo(r.titulo ?? "");
+        if (r.proyecto_id) setProyectoId(r.proyecto_id);
+        if (r.dominio) setDominio(r.dominio);
+
+        const v = Number(params.get("version"));
+        if (v === 1 || v === 2 || v === 3) setVersion(v);
+
+        // La versión y la reunión ya están en el estado: se limpian de la URL
+        // para que recargar no vuelva a arrastrar la reunión sin querer.
+        setParams({}, { replace: true });
+      } catch {
+        // Si la reunión no existe o no es de este usuario, se sigue como una
+        // reunión nueva en blanco: es lo que el usuario puede resolver.
+        setParams({}, { replace: true });
+      } finally {
+        if (!cancelado) setCargandoReunion(false);
+      }
+    })();
+
+    return () => {
+      cancelado = true;
+    };
+  }, [params, reunionId, setParams]);
+
+  /**
+   * Al cargar una reunión existente el proyecto se fija a mano, sin pasar por
+   * `elegirProyecto`, así que su documento de referencia no se heredaba y la
+   * versión 3 se quedaba sin poder generarse. Esto lo hereda en cuanto la
+   * lista de proyectos está disponible.
+   */
+  useEffect(() => {
+    if (!proyectoId || refdoc.trim()) return;
+    const p = lista.find((x) => x.id === proyectoId);
+    if (p?.plantilla_md) setRefdoc(p.plantilla_md);
+  }, [proyectoId, lista, refdoc]);
 
   const textoFinal = useMemo(
     () => (subs ? aplicar(transcripcion, subs) : transcripcion),
@@ -243,6 +313,19 @@ export default function Nueva() {
 
   return (
     <div className="flex h-full flex-col md:flex-row">
+      {/* Se llegó desde Comparar para añadir otra versión: hay que decirlo, o
+          parece que se está creando una reunión nueva y duplicada. */}
+      {reunionId && (
+        <p
+          role="status"
+          className="shrink-0 border-b border-line bg-raised px-4 py-2 text-xs text-muted"
+        >
+          {cargandoReunion
+            ? "Cargando la reunión…"
+            : `Añadiendo la versión ${version} a «${titulo}». Se reutiliza su transcripción.`}
+        </p>
+      )}
+
       {/* Pestañas: solo cuando los tres paneles no caben de lado a lado */}
       <div
         role="tablist"

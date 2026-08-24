@@ -89,6 +89,7 @@ Este documento especifica los requerimientos del módulo de control de acceso a 
 const REUNION_DEMO = {
   id: "demo",
   titulo: "Levantamiento control de acceso",
+  proyecto_id: null as string | null,
   proyecto: "Proyecto ACCESO",
   dominio: "sistemas de control de acceso",
   fecha_reunion: "2026-08-21",
