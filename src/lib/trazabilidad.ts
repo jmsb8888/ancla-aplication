@@ -51,11 +51,17 @@ export interface Respaldo {
  * Umbral de respaldo, medido y no elegido a ojo.
  *
  * Sobre una transcripción real de levantamiento (58 min, 1.190 palabras) y el
- * documento que salió de ella, los requerimientos legítimos puntuaron entre
- * 21 % y 38 %. Cinco requerimientos inventados a propósito —notificaciones
- * push, pasarela de pagos, biometría facial, ISO 27001, solicitud de
- * vacaciones— puntuaron entre 0 % y 14 %. El corte va en medio de esas dos
- * franjas, no pegado a ninguna.
+ * documento que salió de ella, los seis requerimientos legítimos puntuaron
+ * entre 20 % y 46 %. Cinco requerimientos inventados a propósito
+ * —notificaciones push, pasarela de pagos, biometría facial, ISO 27001,
+ * solicitud de vacaciones— puntuaron entre 0 % y 29 %.
+ *
+ * Las dos franjas se solapan, y conviene saber por dónde: el inventado que
+ * llega al 29 % es el de biometría facial, y llega ahí porque en la reunión sí
+ * se habló de reconocimiento facial —para dejarlo fuera de alcance—. Esto mide
+ * solapamiento de términos, no acuerdo: un requerimiento sobre algo rechazado
+ * puntúa como uno sobre algo acordado. Por eso el resultado se le muestra al
+ * analista y no decide solo.
  *
  * Con el 0,34 anterior el documento entero salía «0 % respaldado»: un aviso
  * que se dispara siempre no avisa de nada, y el analista aprende a ignorarlo.
